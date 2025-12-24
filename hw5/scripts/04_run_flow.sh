@@ -3,8 +3,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 source ./00_vars.sh
 
-if [ ! -f "${FLOW_PATH}" ]; then
-  echo "Missing flow: ${FLOW_PATH}" >&2
+if [ ! -x "${PY_BIN}" ]; then
+  echo "Missing venv python: ${PY_BIN}" >&2
+  echo "Run: bash ./01_install_prefect.sh" >&2
   exit 1
 fi
 

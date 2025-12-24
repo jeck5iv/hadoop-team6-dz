@@ -20,5 +20,6 @@ HS2_HOST="${HS2_HOST:-tmpl-nn}"
 HS2_PORT="${HS2_PORT:-5433}"
 HIVE_JDBC_URL="${HIVE_JDBC_URL:-jdbc:hive2://${HS2_HOST}:${HS2_PORT}/${DB_NAME}}"
 
-PREFECT_BIN="${PREFECT_BIN:-${HOME}/.local/bin/prefect}"
-PY_BIN="${PY_BIN:-${HOME}/.local/bin/python3}"
+VENV_DIR="${VENV_DIR:-/home/hadoop/venv-prefect}"
+PREFECT_BIN="${PREFECT_BIN:-${VENV_DIR}/bin/prefect}"
+PY_BIN="${PY_BIN:-${VENV_DIR}/bin/python}"

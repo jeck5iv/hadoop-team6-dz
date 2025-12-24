@@ -21,6 +21,7 @@
 - YARN развернут и запущен
 - Hive развернут (HiveServer2 доступен), warehouse расположен в HDFS по пути `/user/hive/warehouse`
 - Apache Spark установлен и настроен для работы с YARN/HDFS/Hive (см. HW4)
+- JDBC-драйвер PostgreSQL доступен для Spark (postgresql-*.jar в `$SPARK_HOME/jars` либо добавляется перед запуском)
 - Данные размещены в HDFS по пути `/input/data.csv`
 - Python 3.12 установлен
 
@@ -36,20 +37,20 @@
 
 ## 3. Выполнение работы
 
-Все команды ниже выполняются на EdgeNode (tmpl-jn) под пользователем `hadoop`, если не указано иначе.
+Все команды ниже выполняются на EdgeNode (tmpl-jn). Команды, требующие `sudo`, выполняются под пользователем `team`.
 
 ### 3.1 Подготовка окружения
 
-**1)** Подключиться к кластеру и перейти к пользователю `hadoop`:
+**1)** Подключиться к кластеру:
 
 ```bash
 ssh team@176.109.91.8
-sudo -i -u hadoop
 ```
 
 **2)** Проверить доступность HDFS/YARN:
 
 ```bash
+sudo -i -u hadoop
 hdfs dfs -ls /
 yarn node -list
 ```
@@ -63,19 +64,30 @@ hdfs dfs -head /input/data.csv
 
 ---
 
-### 3.2 Установка Prefect (локальный запуск потока)
+### 3.2 Установка Prefect (через venv)
 
-Установка выполняется в user-space пользователя `hadoop`.
+Ubuntu 24.04 использует PEP 668 (externally-managed-environment), поэтому установка Prefect выполняется в виртуальном окружении.
+
+**1)** Установить поддержку venv (под `team`):
 
 ```bash
-python3 -m pip install --user --upgrade pip
-python3 -m pip install --user prefect
+exit
+ssh team@176.109.91.8
+sudo apt-get update -y
+sudo apt-get install -y python3-venv
 ```
 
-Проверка:
+**2)** Создать venv и установить Prefect (под `hadoop`):
 
 ```bash
-~/.local/bin/prefect version
+sudo -i -u hadoop
+python3 -m venv /home/hadoop/venv-prefect
+source /home/hadoop/venv-prefect/bin/activate
+
+pip install --upgrade pip
+pip install prefect
+
+prefect version
 ```
 
 ---
@@ -85,7 +97,7 @@ python3 -m pip install --user prefect
 Создать файл:
 
 ```bash
-vim ~/spark_hw5_etl.py
+nano ~/spark_hw5_etl.py
 ```
 
 Содержимое:
@@ -146,7 +158,7 @@ spark.stop()
 **1)** Создать файл потока Prefect:
 
 ```bash
-vim ~/hw5_flow.py
+nano ~/hw5_flow.py
 ```
 
 Содержимое:
@@ -158,12 +170,13 @@ from prefect import flow, task
 
 SPARK_HOME = os.environ.get("SPARK_HOME", "/home/hadoop/spark")
 JOB_PATH = os.environ.get("JOB_PATH", "/home/hadoop/spark_hw5_etl.py")
+HDFS_INPUT_FILE = os.environ.get("HDFS_INPUT_FILE", "hdfs:///input/data.csv")
 
 @task
 def check_hdfs():
-    p = subprocess.run(["hdfs", "dfs", "-test", "-e", "hdfs:///input/data.csv"])
+    p = subprocess.run(["hdfs", "dfs", "-test", "-e", HDFS_INPUT_FILE])
     if p.returncode != 0:
-        raise RuntimeError("Missing hdfs:///input/data.csv")
+        raise RuntimeError(f"Missing {HDFS_INPUT_FILE}")
 
 @task
 def run_spark():
@@ -179,10 +192,11 @@ if __name__ == "__main__":
     hw5_flow()
 ```
 
-**2)** Запустить поток:
+**2)** Запустить поток (в активированном venv):
 
 ```bash
-~/.local/bin/python3 ~/hw5_flow.py
+source /home/hadoop/venv-prefect/bin/activate
+python ~/hw5_flow.py
 ```
 
 ---
@@ -193,7 +207,7 @@ if __name__ == "__main__":
 cd /home/hadoop/apache-hive-4.0.0-alpha-2-bin
 bin/beeline -u jdbc:hive2://tmpl-nn:5433 -n hadoop -e "
 USE test;
-SHOW TABLES;
+SHOW TABLES LIKE 'hw5_result';
 DESCRIBE FORMATTED hw5_result;
 SELECT * FROM hw5_result LIMIT 20;
 "

@@ -5,7 +5,7 @@ source ./00_vars.sh
 
 "${HIVE_HOME}/bin/beeline" -u "${HIVE_JDBC_URL}" -n hadoop -e "
 USE ${DB_NAME};
-SHOW TABLES;
+SHOW TABLES LIKE '${TABLE_NAME}';
 DESCRIBE FORMATTED ${TABLE_NAME};
 SELECT * FROM ${TABLE_NAME} LIMIT 20;
 "

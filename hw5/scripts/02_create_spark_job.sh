@@ -3,6 +3,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 source ./00_vars.sh
 
+if ! ls -1 "${SPARK_HOME}/jars" 2>/dev/null | grep -qi postgresql; then
+  cp -f "${HIVE_HOME}/lib/postgresql-"*.jar "${SPARK_HOME}/jars/" 2>/dev/null || true
+fi
+
 cat > "${JOB_PATH}" <<'PY'
 from pyspark.sql import SparkSession, functions as F
 

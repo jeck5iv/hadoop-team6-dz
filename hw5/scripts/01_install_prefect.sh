@@ -3,6 +3,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 source ./00_vars.sh
 
-python3 -m pip install --user --upgrade pip
-python3 -m pip install --user prefect
+if [ ! -d "${VENV_DIR}" ]; then
+  python3 -m venv "${VENV_DIR}"
+fi
+
+"${PY_BIN}" -m pip install --upgrade pip
+"${PY_BIN}" -m pip install prefect
 "${PREFECT_BIN}" version
